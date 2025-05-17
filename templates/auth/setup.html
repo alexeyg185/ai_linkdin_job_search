@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block title %}Setup - AI Job Search Automation{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Initial Setup</h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <p>Welcome to the AI Job Search Automation System! This page helps you set up your initial admin account.</p>
+                    <p>After setup is complete, you'll be able to log in and configure your job search preferences.</p>
+                </div>
+
+                <form method="post" action="{{ url_for('setup') }}">
+                    {{ csrf_token() }}
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Admin Username</label>
+                        <input type="text" class="form-control" id="username" name="username" required autofocus>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Admin Password</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                        <div class="form-text">Choose a strong password with at least 8 characters, including numbers and special characters.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email Address (Optional)</label>
+                        <input type="email" class="form-control" id="email" name="email">
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Complete Setup</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

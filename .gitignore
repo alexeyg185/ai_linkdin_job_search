@@ -1,0 +1,60 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Virtual environment
+venv/
+.venv/
+env/
+ENV/
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# PyCharm
+.idea/
+*.iml
+
+# IDE/editor swap & temp files
+*~
+*.tmp
+*.temp
+
+# Logs
+*.log
+
+# SQL files (schema, dumps, etc.)
+*.sql
+
+# Test caches
+.pytest_cache/
+.cache/
+
+# Coverage reports
+.coverage
+htmlcov/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# OS files
+Thumbs.db
+ehthumbs.db
+.DS_Store
+
+# Static project-structure or temp docs
+proj_struc.text
+
+# Optional: if you ever generate docs
+docs/_build/

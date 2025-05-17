@@ -1,0 +1,540 @@
+{% extends 'base.html' %}
+
+{% block title %}Preferences - AI Job Search Automation{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1 class="h3">Preferences</h1>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary">
+            Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-3">
+        <div class="list-group mb-4">
+            <a href="#search-preferences" class="list-group-item list-group-item-action active" data-bs-toggle="tab">Search Preferences</a>
+            <a href="#analysis-preferences" class="list-group-item list-group-item-action" data-bs-toggle="tab">Analysis Preferences</a>
+            <a href="#schedule-preferences" class="list-group-item list-group-item-action" data-bs-toggle="tab">Schedule Preferences</a>
+            <a href="#ui-preferences" class="list-group-item list-group-item-action" data-bs-toggle="tab">UI Preferences</a>
+            <a href="#technical-preferences" class="list-group-item list-group-item-action" data-bs-toggle="tab">Technical Settings</a>
+        </div>
+    </div>
+
+    <div class="col-lg-9">
+        <div class="card">
+            <div class="card-body">
+                <div class="tab-content">
+                    <!-- Search Preferences -->
+                    <div class="tab-pane fade show active" id="search-preferences">
+                        <h4 class="card-title">Search Preferences</h4>
+                        <p class="text-muted">Configure what jobs to search for on LinkedIn</p>
+
+                        <form id="searchPreferencesForm">
+                            <div class="mb-3">
+                                <label for="jobTitles" class="form-label">Job Titles</label>
+                                <textarea class="form-control" id="jobTitles" rows="3" placeholder="Enter job titles, one per line">{{ preferences.search.job_titles|join('\n') }}</textarea>
+                                <div class="form-text">Enter titles to search for, one per line (e.g., "AI Engineer", "Machine Learning Engineer")</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="locations" class="form-label">Locations</label>
+                                <textarea class="form-control" id="locations" rows="3" placeholder="Enter locations, one per line">{{ preferences.search.locations|join('\n') }}</textarea>
+                                <div class="form-text">Enter locations to search in, one per line (e.g., "Remote", "New York, NY")</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Experience Levels</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="Internship" id="expInternship"
+                                        {{ 'checked' if 'Internship' in preferences.search.experience_levels }}>
+                                    <label class="form-check-label" for="expInternship">Internship</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="Entry level" id="expEntry"
+                                        {{ 'checked' if 'Entry level' in preferences.search.experience_levels }}>
+                                    <label class="form-check-label" for="expEntry">Entry level</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="Associate" id="expAssociate"
+                                        {{ 'checked' if 'Associate' in preferences.search.experience_levels }}>
+                                    <label class="form-check-label" for="expAssociate">Associate</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="Mid-Senior level" id="expMidSenior"
+                                        {{ 'checked' if 'Mid-Senior level' in preferences.search.experience_levels }}>
+                                    <label class="form-check-label" for="expMidSenior">Mid-Senior level</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="Director" id="expDirector"
+                                        {{ 'checked' if 'Director' in preferences.search.experience_levels }}>
+                                    <label class="form-check-label" for="expDirector">Director</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="Executive" id="expExecutive"
+                                        {{ 'checked' if 'Executive' in preferences.search.experience_levels }}>
+                                    <label class="form-check-label" for="expExecutive">Executive</label>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="remotePreference"
+                                        {{ 'checked' if preferences.search.remote_preference }}>
+                                    <label class="form-check-label" for="remotePreference">Include remote jobs</label>
+                                </div>
+                            </div>
+
+                            <div class="text-end">
+                                <button type="submit" class="btn btn-primary">Save Search Preferences</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Analysis Preferences -->
+                    <div class="tab-pane fade" id="analysis-preferences">
+                        <h4 class="card-title">Analysis Preferences</h4>
+                        <p class="text-muted">Configure how jobs are analyzed for relevance</p>
+
+                        <form id="analysisPreferencesForm">
+                            <div class="mb-3">
+                                <label for="relevantTitlePatterns" class="form-label">Relevant Title Patterns</label>
+                                <textarea class="form-control" id="relevantTitlePatterns" rows="3" placeholder="Enter relevant title patterns, one per line">{{ preferences.analysis.relevant_title_patterns|join('\n') }}</textarea>
+                                <div class="form-text">Enter patterns to look for in job titles, one per line (e.g., "AI", "Machine Learning")</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="requiredSkills" class="form-label">Required Skills</label>
+                                <textarea class="form-control" id="requiredSkills" rows="3" placeholder="Enter required skills, one per line">{{ preferences.analysis.required_skills|join('\n') }}</textarea>
+                                <div class="form-text">Enter skills that are required for a job to be relevant, one per line</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="preferredSkills" class="form-label">Preferred Skills</label>
+                                <textarea class="form-control" id="preferredSkills" rows="3" placeholder="Enter preferred skills, one per line">{{ preferences.analysis.preferred_skills|join('\n') }}</textarea>
+                                <div class="form-text">Enter skills that are preferred but not required, one per line</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="relevanceThreshold" class="form-label">Relevance Threshold</label>
+                                <div class="input-group">
+                                    <input type="range" class="form-range" id="relevanceThreshold" min="0" max="1" step="0.05" value="{{ preferences.analysis.relevance_threshold }}">
+                                    <span class="input-group-text" id="relevanceThresholdValue">{{ (preferences.analysis.relevance_threshold * 100)|int }}%</span>
+                                </div>
+                                <div class="form-text">Jobs with a relevance score above this threshold will be marked as relevant</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="titleMatchStrictness" class="form-label">Title Match Strictness</label>
+                                <div class="input-group">
+                                    <input type="range" class="form-range" id="titleMatchStrictness" min="0" max="1" step="0.05" value="{{ preferences.analysis.title_match_strictness }}">
+                                    <span class="input-group-text" id="titleMatchStrictnessValue">{{ (preferences.analysis.title_match_strictness * 100)|int }}%</span>
+                                </div>
+                                <div class="form-text">How strictly to match job titles (higher value = stricter matching)</div>
+                            </div>
+
+                            <div class="text-end">
+                                <button type="submit" class="btn btn-primary">Save Analysis Preferences</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Schedule Preferences -->
+                    <div class="tab-pane fade" id="schedule-preferences">
+                        <h4 class="card-title">Schedule Preferences</h4>
+                        <p class="text-muted">Configure when jobs are automatically scraped and analyzed</p>
+
+                        <form id="schedulePreferencesForm">
+                            <div class="mb-3">
+                                <label class="form-label">Schedule Type</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="scheduleType" id="scheduleDaily" value="daily"
+                                        {{ 'checked' if schedule and schedule.schedule_type == 'daily' }}>
+                                    <label class="form-check-label" for="scheduleDaily">Daily</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="scheduleType" id="scheduleWeekly" value="weekly"
+                                        {{ 'checked' if schedule and schedule.schedule_type == 'weekly' }}>
+                                    <label class="form-check-label" for="scheduleWeekly">Weekly</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="scheduleType" id="scheduleCustom" value="custom"
+                                        {{ 'checked' if schedule and schedule.schedule_type == 'custom' }}>
+                                    <label class="form-check-label" for="scheduleCustom">Custom</label>
+                                </div>
+                            </div>
+
+                            <div id="dailySettings" class="schedule-settings mb-3" style="{{ 'display: none;' if not schedule or schedule.schedule_type != 'daily' }}">
+                                <label for="dailyTime" class="form-label">Time</label>
+                                <input type="time" class="form-control" id="dailyTime"
+                                    value="{{ schedule.execution_time if schedule and schedule.schedule_type == 'daily' else '08:00' }}">
+                            </div>
+
+                            <div id="weeklySettings" class="schedule-settings mb-3" style="{{ 'display: none;' if not schedule or schedule.schedule_type != 'weekly' }}">
+                                <div class="mb-3">
+                                    <label for="weeklyDay" class="form-label">Day</label>
+                                    <select class="form-control" id="weeklyDay">
+                                        <option value="monday" {{ 'selected' if schedule and schedule.schedule_type == 'weekly' and schedule.execution_time.startswith('monday') }}>Monday</option>
+                                        <option value="tuesday" {{ 'selected' if schedule and schedule.schedule_type == 'weekly' and schedule.execution_time.startswith('tuesday') }}>Tuesday</option>
+                                        <option value="wednesday" {{ 'selected' if schedule and schedule.schedule_type == 'weekly' and schedule.execution_time.startswith('wednesday') }}>Wednesday</option>
+                                        <option value="thursday" {{ 'selected' if schedule and schedule.schedule_type == 'weekly' and schedule.execution_time.startswith('thursday') }}>Thursday</option>
+                                        <option value="friday" {{ 'selected' if schedule and schedule.schedule_type == 'weekly' and schedule.execution_time.startswith('friday') }}>Friday</option>
+                                        <option value="saturday" {{ 'selected' if schedule and schedule.schedule_type == 'weekly' and schedule.execution_time.startswith('saturday') }}>Saturday</option>
+                                        <option value="sunday" {{ 'selected' if schedule and schedule.schedule_type == 'weekly' and schedule.execution_time.startswith('sunday') }}>Sunday</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="weeklyTime" class="form-label">Time</label>
+                                    <input type="time" class="form-control" id="weeklyTime"
+                                        value="{{ schedule.execution_time.split(' ')[1] if schedule and schedule.schedule_type == 'weekly' and ' ' in schedule.execution_time else '08:00' }}">
+                                </div>
+                            </div>
+
+                            <div id="customSettings" class="schedule-settings mb-3" style="{{ 'display: none;' if not schedule or schedule.schedule_type != 'custom' }}">
+                                <div class="mb-3">
+                                    <label for="customInterval" class="form-label">Run every</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="customInterval" min="1" max="168"
+                                            value="{{ schedule.execution_time.split(':')[1] if schedule and schedule.schedule_type == 'custom' and ':' in schedule.execution_time else '24' }}">
+                                        <span class="input-group-text">hours</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="scheduleEnabled"
+                                        {{ 'checked' if schedule and schedule.enabled }}>
+                                    <label class="form-check-label" for="scheduleEnabled">Enable scheduled runs</label>
+                                </div>
+                            </div>
+
+                            <div class="text-end">
+                                <button type="submit" class="btn btn-primary">Save Schedule Preferences</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- UI Preferences -->
+                    <div class="tab-pane fade" id="ui-preferences">
+                        <h4 class="card-title">UI Preferences</h4>
+                        <p class="text-muted">Configure display preferences</p>
+
+                        <form id="uiPreferencesForm">
+                            <div class="mb-3">
+                                <label class="form-label">Default Dashboard Layout</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="dashboardLayout" id="layoutDefault" value="default"
+                                        {{ 'checked' if preferences.ui.dashboard_layout == 'default' }}>
+                                    <label class="form-check-label" for="layoutDefault">Default</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="dashboardLayout" id="layoutCompact" value="compact"
+                                        {{ 'checked' if preferences.ui.dashboard_layout == 'compact' }}>
+                                    <label class="form-check-label" for="layoutCompact">Compact</label>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Default Job Filters</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="relevant" id="defaultFilterRelevant"
+                                        {{ 'checked' if 'relevant' in preferences.ui.default_filters.state }}>
+                                    <label class="form-check-label" for="defaultFilterRelevant">Show Relevant Jobs</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="saved" id="defaultFilterSaved"
+                                        {{ 'checked' if 'saved' in preferences.ui.default_filters.state }}>
+                                    <label class="form-check-label" for="defaultFilterSaved">Show Saved Jobs</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="applied" id="defaultFilterApplied"
+                                        {{ 'checked' if 'applied' in preferences.ui.default_filters.state }}>
+                                    <label class="form-check-label" for="defaultFilterApplied">Show Applied Jobs</label>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Mobile View</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="mobileView" id="mobileViewStandard" value="standard"
+                                        {{ 'checked' if preferences.ui.mobile_view == 'standard' }}>
+                                    <label class="form-check-label" for="mobileViewStandard">Standard</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="mobileView" id="mobileViewCompact" value="compact"
+                                        {{ 'checked' if preferences.ui.mobile_view == 'compact' }}>
+                                    <label class="form-check-label" for="mobileViewCompact">Compact</label>
+                                </div>
+                            </div>
+
+                            <div class="text-end">
+                                <button type="submit" class="btn btn-primary">Save UI Preferences</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Technical Settings -->
+                    <div class="tab-pane fade" id="technical-preferences">
+                        <h4 class="card-title">Technical Settings</h4>
+                        <p class="text-muted">Configure advanced technical settings for the system</p>
+
+                        <form id="technicalPreferencesForm">
+                            <div class="mb-3">
+                                <label for="chromeExecutablePath" class="form-label">Chrome Driver Path</label>
+                                <input type="text" class="form-control" id="chromeExecutablePath"
+                                    placeholder="Path to chromedriver.exe (leave empty for auto-detection)"
+                                    value="{{ preferences.technical.chrome_executable_path or '' }}">
+                                <div class="form-text">Path to ChromeDriver executable (e.g., C:\path\to\chromedriver.exe)</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="chromeBinaryLocation" class="form-label">Chrome Binary Path</label>
+                                <input type="text" class="form-control" id="chromeBinaryLocation"
+                                    placeholder="Path to chrome.exe (leave empty for auto-detection)"
+                                    value="{{ preferences.technical.chrome_binary_location or '' }}">
+                                <div class="form-text">Path to Chrome browser executable (e.g., C:\Program Files\Google\Chrome\Application\chrome.exe)</div>
+                            </div>
+
+                            <div class="text-end">
+                                <button type="submit" class="btn btn-primary">Save Technical Settings</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle schedule type selection
+        const scheduleTypeRadios = document.querySelectorAll('input[name="scheduleType"]');
+        const scheduleSettings = document.querySelectorAll('.schedule-settings');
+
+        function updateScheduleSettings() {
+            const selectedType = document.querySelector('input[name="scheduleType"]:checked').value;
+
+            scheduleSettings.forEach(setting => {
+                setting.style.display = 'none';
+            });
+
+            if (selectedType === 'daily') {
+                document.getElementById('dailySettings').style.display = 'block';
+            } else if (selectedType === 'weekly') {
+                document.getElementById('weeklySettings').style.display = 'block';
+            } else if (selectedType === 'custom') {
+                document.getElementById('customSettings').style.display = 'block';
+            }
+        }
+
+        scheduleTypeRadios.forEach(radio => {
+            radio.addEventListener('change', updateScheduleSettings);
+        });
+
+        // Initialize schedule settings display
+        updateScheduleSettings();
+
+        // Handle form submissions
+        const forms = [
+            {
+                form: document.getElementById('searchPreferencesForm'),
+                category: 'search',
+                dataProcessor: function() {
+                    // Process job titles
+                    const jobTitles = document.getElementById('jobTitles').value
+                        .split('\n')
+                        .map(line => line.trim())
+                        .filter(line => line);
+
+                    // Process locations
+                    const locations = document.getElementById('locations').value
+                        .split('\n')
+                        .map(line => line.trim())
+                        .filter(line => line);
+
+                    // Process experience levels
+                    const experienceLevels = [];
+                    document.querySelectorAll('input[id^="exp"]:checked').forEach(checkbox => {
+                        experienceLevels.push(checkbox.value);
+                    });
+
+                    // Process remote preference
+                    const remotePreference = document.getElementById('remotePreference').checked;
+
+                    return {
+                        job_titles: jobTitles,
+                        locations: locations,
+                        experience_levels: experienceLevels,
+                        remote_preference: remotePreference
+                    };
+                }
+            },
+            {
+                form: document.getElementById('analysisPreferencesForm'),
+                category: 'analysis',
+                dataProcessor: function() {
+                    // Process title patterns
+                    const relevantTitlePatterns = document.getElementById('relevantTitlePatterns').value
+                        .split('\n')
+                        .map(line => line.trim())
+                        .filter(line => line);
+
+                    // Process required skills
+                    const requiredSkills = document.getElementById('requiredSkills').value
+                        .split('\n')
+                        .map(line => line.trim())
+                        .filter(line => line);
+
+                    // Process preferred skills
+                    const preferredSkills = document.getElementById('preferredSkills').value
+                        .split('\n')
+                        .map(line => line.trim())
+                        .filter(line => line);
+
+                    // Process thresholds
+                    const relevanceThreshold = parseFloat(document.getElementById('relevanceThreshold').value);
+                    const titleMatchStrictness = parseFloat(document.getElementById('titleMatchStrictness').value);
+
+                    return {
+                        relevant_title_patterns: relevantTitlePatterns,
+                        required_skills: requiredSkills,
+                        preferred_skills: preferredSkills,
+                        relevance_threshold: relevanceThreshold,
+                        title_match_strictness: titleMatchStrictness
+                    };
+                }
+            },
+            {
+                form: document.getElementById('schedulePreferencesForm'),
+                category: 'scheduling',
+                dataProcessor: function() {
+                    // Get schedule type
+                    const scheduleType = document.querySelector('input[name="scheduleType"]:checked').value;
+
+                    // Build execution time based on schedule type
+                    let executionTime = '';
+                    if (scheduleType === 'daily') {
+                        executionTime = document.getElementById('dailyTime').value;
+                    } else if (scheduleType === 'weekly') {
+                        const day = document.getElementById('weeklyDay').value;
+                        const time = document.getElementById('weeklyTime').value;
+                        executionTime = `${day} ${time}`;
+                    } else if (scheduleType === 'custom') {
+                        const interval = document.getElementById('customInterval').value;
+                        executionTime = `interval:${interval}`;
+                    }
+
+                    // Get enabled status
+                    const enabled = document.getElementById('scheduleEnabled').checked;
+
+                    return {
+                        schedule_type: scheduleType,
+                        execution_time: executionTime,
+                        notifications_enabled: enabled
+                    };
+                }
+            },
+            {
+                form: document.getElementById('uiPreferencesForm'),
+                category: 'ui',
+                dataProcessor: function() {
+                    // Get dashboard layout
+                    const dashboardLayout = document.querySelector('input[name="dashboardLayout"]:checked').value;
+
+                    // Get default filters
+                    const defaultFilters = {
+                        state: []
+                    };
+                    document.querySelectorAll('input[id^="defaultFilter"]:checked').forEach(checkbox => {
+                        defaultFilters.state.push(checkbox.value);
+                    });
+
+                    // Get mobile view
+                    const mobileView = document.querySelector('input[name="mobileView"]:checked').value;
+
+                    return {
+                        dashboard_layout: dashboardLayout,
+                        default_filters: defaultFilters,
+                        mobile_view: mobileView
+                    };
+                }
+            },
+            {
+                form: document.getElementById('technicalPreferencesForm'),
+                category: 'technical',
+                dataProcessor: function() {
+                    // Get chrome paths
+                    const chromeExecutablePath = document.getElementById('chromeExecutablePath').value.trim() || null;
+                    const chromeBinaryLocation = document.getElementById('chromeBinaryLocation').value.trim() || null;
+
+                    return {
+                        chrome_executable_path: chromeExecutablePath,
+                        chrome_binary_location: chromeBinaryLocation
+                    };
+                }
+            }
+        ];
+
+        // Set up form submission handlers
+        forms.forEach(formConfig => {
+            formConfig.form.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const formData = formConfig.dataProcessor();
+
+                const payload = {};
+                payload[formConfig.category] = formData;
+
+                // Send preferences update
+                fetch('{{ url_for('update_preferences') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify(payload)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert('Preferences saved successfully!');
+                    } else {
+                        alert('Error: ' + (data.message || 'Failed to save preferences'));
+                    }
+                })
+                .catch(error => {
+                    alert('Error: ' + error.message);
+                });
+            });
+        });
+
+        // Handle range input displays
+        const rangeInputs = [
+            {
+                input: document.getElementById('relevanceThreshold'),
+                display: document.getElementById('relevanceThresholdValue'),
+                formatter: value => `${Math.round(value * 100)}%`
+            },
+            {
+                input: document.getElementById('titleMatchStrictness'),
+                display: document.getElementById('titleMatchStrictnessValue'),
+                formatter: value => `${Math.round(value * 100)}%`
+            }
+        ];
+
+        rangeInputs.forEach(config => {
+            config.input.addEventListener('input', function() {
+                config.display.textContent = config.formatter(this.value);
+            });
+        });
+    });
+</script>
+{% endblock %}

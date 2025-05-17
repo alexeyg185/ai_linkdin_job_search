@@ -1,0 +1,386 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Job - AI Job Search Automation{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1 class="h3">Add Job by URL</h1>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{{ url_for('jobs') }}" class="btn btn-outline-primary">
+            <i class="fa fa-arrow-left"></i> Back to Jobs
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Add LinkedIn Job</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <p class="mb-0"><i class="fa fa-info-circle"></i> Add LinkedIn jobs by company URL. Specify job IDs to filter which jobs are imported.</p>
+                </div>
+
+                <form id="jobUrlForm" class="mb-4">
+                    <div class="mb-3">
+                        <label for="companyJobsUrl" class="form-label">Company Jobs URL</label>
+                        <div class="input-group">
+                            <input type="url" class="form-control" id="companyJobsUrl" placeholder="https://www.linkedin.com/company/example/jobs/" required>
+                        </div>
+                        <div class="form-text">Enter the URL of the company's jobs page on LinkedIn</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="jobIds" class="form-label">Job IDs (Required)</label>
+                        <input type="text" class="form-control" id="jobIds" placeholder="3735412268 3668987531 3709976219" required>
+                        <div class="form-text">Enter LinkedIn job IDs separated by spaces (e.g., "3735412268 3668987531")</div>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary" id="fetchJobBtn">
+                            <i class="fa fa-search"></i> Fetch Jobs
+                        </button>
+                    </div>
+                </form>
+
+                <div id="jobFetchStatus" style="display: none;" class="alert alert-info">
+                    <div class="d-flex align-items-center">
+                        <div class="spinner-border spinner-border-sm me-2" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <div>Fetching jobs from company page...</div>
+                    </div>
+                </div>
+
+                <div id="manualEntrySection" style="display: none;">
+                    <div class="alert alert-warning mb-3" id="manualEntryAlert">
+                        <p class="mb-0"><i class="fa fa-exclamation-triangle"></i> Unable to automatically fetch job details. Please enter them manually.</p>
+                    </div>
+
+                    <form id="manualJobForm">
+                        <input type="hidden" id="finalJobUrl">
+
+                        <div class="mb-3">
+                            <label for="manualJobTitle" class="form-label">Job Title <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="manualJobTitle" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="jobCompany" class="form-label">Company <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="jobCompany" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="jobLocation" class="form-label">Location</label>
+                            <input type="text" class="form-control" id="jobLocation">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="jobDescription" class="form-label">Job Description <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="jobDescription" rows="8" required></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="jobSourceTerm" class="form-label">Search Term</label>
+                            <input type="text" class="form-control" id="jobSourceTerm" placeholder="e.g., Data Scientist">
+                            <div class="form-text">The search term or category this job belongs to</div>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Add Job</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div id="successMessage" style="display: none;" class="alert alert-success mt-3">
+                    <p class="mb-0"><i class="fa fa-check-circle"></i> <span id="successMessageText"></span></p>
+                    <div class="mt-2">
+                        <a href="{{ url_for('jobs') }}" class="btn btn-sm btn-primary">View All Jobs</a>
+                        <a href="" id="viewJobLink" class="btn btn-sm btn-outline-primary">View Job Details</a>
+                    </div>
+                </div>
+
+                <div id="errorMessage" style="display: none;" class="alert alert-danger mt-3">
+                    <p class="mb-0"><i class="fa fa-times-circle"></i> <span id="errorMessageText"></span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+
+    // Complete replacement for the scripts section in add_job.html
+
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log("Add job page loaded - initializing form handlers");
+
+        const jobUrlForm = document.getElementById('jobUrlForm');
+        const manualJobForm = document.getElementById('manualJobForm');
+        const jobFetchStatus = document.getElementById('jobFetchStatus');
+        const manualEntrySection = document.getElementById('manualEntrySection');
+        const manualEntryAlert = document.getElementById('manualEntryAlert');
+        const successMessageElement = document.getElementById('successMessage');
+        const errorMessageElement = document.getElementById('errorMessage');
+        const successMessageText = document.getElementById('successMessageText');
+        const errorMessageText = document.getElementById('errorMessageText');
+        const viewJobLink = document.getElementById('viewJobLink');
+
+        console.log("DOM elements initialized");
+
+        // Handle URL form submission
+        jobUrlForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            console.log("Job URL form submitted");
+
+            const companyJobsUrl = document.getElementById('companyJobsUrl').value.trim();
+            const jobIds = document.getElementById('jobIds').value.trim();
+            console.log(`Company URL: ${companyJobsUrl}`);
+            console.log(`Job IDs: ${jobIds}`);
+
+            if (!companyJobsUrl) {
+                console.log("Missing company URL");
+                showError('Please enter a valid company jobs URL');
+                return;
+            }
+
+            if (!jobIds) {
+                console.log("Missing job IDs");
+                showError('Please enter at least one job ID');
+                return;
+            }
+
+            // Create a unique operation ID
+            const operationId = Date.now().toString();
+            console.log(`Created operation ID: ${operationId}`);
+
+            // Show loading status
+            jobFetchStatus.style.display = 'block';
+            manualEntrySection.style.display = 'none';
+            successMessageElement.style.display = 'none';
+            errorMessageElement.style.display = 'none';
+
+            // Start tracking this job operation
+            console.log("Starting job tracker");
+            try {
+                if (typeof JobTracker === 'undefined') {
+                    console.error("JobTracker is undefined!");
+                    showError('Internal error: JobTracker not loaded. Please refresh the page and try again.');
+                    jobFetchStatus.style.display = 'none';
+                    return;
+                }
+
+                JobTracker.start('add_job_by_url', operationId, {
+                    company_jobs_url: companyJobsUrl,
+                    job_ids: jobIds
+                });
+                console.log("Job tracker started successfully");
+            } catch (error) {
+                console.error("Error starting job tracker:", error);
+                showError('Error starting job tracking: ' + error.message);
+                jobFetchStatus.style.display = 'none';
+                return;
+            }
+
+            // Call API to scrape company jobs
+            console.log("Sending fetch request to server");
+            fetch('{{ url_for("add_job_by_url") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    company_jobs_url: companyJobsUrl,
+                    job_ids: jobIds
+                })
+            })
+            .then(response => {
+                console.log("Received response from server:", response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log("Parsed JSON data:", data);
+
+                // Hide loading status
+                jobFetchStatus.style.display = 'none';
+
+                // Determine the actual job count
+                let actualJobCount = 0;
+
+                if (data.analysis_result && data.analysis_result.analyzed) {
+                    // Get from analysis result (most reliable)
+                    actualJobCount = data.analysis_result.analyzed - (data.analysis_result.skipped || 0);
+                    console.log(`Using analysis_result count: ${actualJobCount}`);
+                } else if (data.job_ids_matched && data.job_ids_matched.length) {
+                    // Get from matched jobs
+                    actualJobCount = data.job_ids_matched.length;
+                    console.log(`Using job_ids_matched count: ${actualJobCount}`);
+                } else {
+                    // Fall back to jobs_found
+                    actualJobCount = data.jobs_found || 1; // Default to at least 1 for success
+                    console.log(`Using jobs_found or default: ${actualJobCount}`);
+                }
+
+                if (data.status === 'success') {
+                    // Jobs were successfully scraped
+                    let successMsg = `Successfully processed ${actualJobCount} job`;
+                    if (actualJobCount !== 1) successMsg += 's';
+                    successMsg += ' from LinkedIn. Check your job listings.';
+
+                    showSuccess(data.message || successMsg);
+
+                    // Update job tracker with corrected count
+                    data.actual_jobs_count = actualJobCount; // Add this field for the tracker
+                    console.log("Updating job tracker with success");
+                    JobTracker.update('add_job_by_url', operationId, 'completed', data);
+                } else {
+                    // Failed to scrape jobs
+                    console.log("Job scraping failed:", data.message);
+                    showError(data.message || 'Unable to scrape jobs from the company page.');
+
+                    // Update job tracker
+                    console.log("Updating job tracker with failure");
+                    JobTracker.update('add_job_by_url', operationId, 'failed', data);
+                }
+            })
+            .catch(error => {
+                console.error("Fetch error:", error);
+                // Hide loading status and show error
+                jobFetchStatus.style.display = 'none';
+                showError('Error connecting to server: ' + error.message);
+
+                // Update job tracker
+                console.log("Updating job tracker with error");
+                JobTracker.update('add_job_by_url', operationId, 'failed', {
+                    message: 'Error connecting to server: ' + error.message
+                });
+            });
+        });
+
+        // Handle manual job form submission
+        if (manualJobForm) {
+            manualJobForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                console.log("Manual job form submitted");
+
+                // Get values from form
+                const jobUrl = document.getElementById('finalJobUrl').value;
+                const jobTitle = document.getElementById('manualJobTitle').value.trim();
+                const jobCompany = document.getElementById('jobCompany').value.trim();
+                const jobLocation = document.getElementById('jobLocation').value.trim();
+                const jobDescription = document.getElementById('jobDescription').value.trim();
+                const jobSourceTerm = document.getElementById('jobSourceTerm').value.trim();
+
+                if (!jobUrl || !jobTitle || !jobCompany || !jobDescription) {
+                    console.log("Missing required fields in manual form");
+                    showError('Please fill in all required fields');
+                    return;
+                }
+
+                // Show loading status
+                jobFetchStatus.style.display = 'block';
+                manualEntrySection.style.display = 'none';
+
+                // Add job with manual data
+                console.log("Sending manual job data to server");
+                fetch('{{ url_for("add_job_by_url") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({
+                        job_url: jobUrl,
+                        job_data: {
+                            title: jobTitle,
+                            company: jobCompany,
+                            location: jobLocation,
+                            description: jobDescription,
+                            source_term: jobSourceTerm
+                        }
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Manual job response:", data);
+                    // Hide loading status
+                    jobFetchStatus.style.display = 'none';
+
+                    if (data.status === 'success') {
+                        // Job was successfully added
+                        showSuccess(data.message || 'Job successfully added to your list!', data.job_id);
+                    } else {
+                        // Show error message
+                        showError(data.message || 'Failed to add job');
+                        // Show manual entry form again
+                        manualEntrySection.style.display = 'block';
+                    }
+                })
+                .catch(error => {
+                    console.error("Manual job error:", error);
+                    // Hide loading status and show error
+                    jobFetchStatus.style.display = 'none';
+                    showError('Error connecting to server');
+                    // Show manual entry form again
+                    manualEntrySection.style.display = 'block';
+                });
+            });
+        } else {
+            console.log("Manual job form not found in the DOM");
+        }
+
+        // Function to show success message
+        function showSuccess(message, jobId) {
+            console.log(`Showing success: ${message}`);
+            successMessageText.textContent = message;
+            successMessageElement.style.display = 'block';
+
+            // Update view job link
+            if (jobId) {
+                viewJobLink.href = '{{ url_for("job_detail", job_id="JOB_ID") }}'.replace('JOB_ID', jobId);
+                viewJobLink.style.display = 'inline-block';
+            } else {
+                viewJobLink.style.display = 'none';
+            }
+
+            // Reset forms
+            jobUrlForm.reset();
+            if (manualJobForm) manualJobForm.reset();
+            manualEntrySection.style.display = 'none';
+        }
+
+        // Function to show error message
+        function showError(message) {
+            console.log(`Showing error: ${message}`);
+            errorMessageText.textContent = message;
+            errorMessageElement.style.display = 'block';
+        }
+
+        // Function to show manual entry form
+        function showManualEntry(message) {
+            console.log(`Showing manual entry: ${message}`);
+            if (manualEntryAlert && manualEntryAlert.querySelector) {
+                const messageElement = manualEntryAlert.querySelector('p');
+                if (messageElement) {
+                    messageElement.textContent = message;
+                }
+            }
+            manualEntrySection.style.display = 'block';
+
+            const titleInput = document.getElementById('manualJobTitle');
+            if (titleInput) {
+                titleInput.focus();
+            }
+        }
+
+        console.log("Add job page initialization complete");
+    });
+</script>
+{% endblock %}

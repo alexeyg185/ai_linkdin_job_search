@@ -1,0 +1,405 @@
+{% extends 'base.html' %}
+
+{% block title %}Jobs - AI Job Search Automation{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1 class="h3">Job Listings</h1>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary me-2">
+            Back to Dashboard
+        </a>
+        <a href="{{ url_for('add_job_page') }}" class="btn btn-primary">
+            <i class="fa fa-plus"></i> Add Job
+        </a>
+    </div>
+</div>
+
+<!-- Filter and Search -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" action="{{ url_for('jobs') }}" id="filterForm">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="query" class="form-label">Search</label>
+                    <input type="text" class="form-control" id="query" name="query" value="{{ query }}">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Job Status</label>
+                    <div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" name="state" id="state-relevant" value="relevant" {% if 'relevant' in states %}checked{% endif %}>
+                            <label class="form-check-label" for="state-relevant">Relevant</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" name="state" id="state-saved" value="saved" {% if 'saved' in states %}checked{% endif %}>
+                            <label class="form-check-label" for="state-saved">Saved</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" name="state" id="state-applied" value="applied" {% if 'applied' in states %}checked{% endif %}>
+                            <label class="form-check-label" for="state-applied">Applied</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" name="state" id="state-irrelevant" value="irrelevant" {% if 'irrelevant' in states %}checked{% endif %}>
+                            <label class="form-check-label" for="state-irrelevant">Irrelevant</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-12 text-end">
+                    <button type="submit" class="btn btn-primary">Apply Filters</button>
+                    <a href="{{ url_for('jobs') }}" class="btn btn-outline-secondary">Clear Filters</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Job Listings -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">Results</h5>
+    </div>
+    <div class="card-body p-0">
+        {% if results.results|length == 0 %}
+        <div class="text-center py-5">
+            <p class="text-muted mb-3">No jobs found matching your criteria</p>
+            <a href="{{ url_for('add_job_page') }}" class="btn btn-primary">
+                <i class="fa fa-plus"></i> Add Job Manually
+            </a>
+        </div>
+        {% else %}
+        <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th>Job ID</th>
+                        <th>Title</th>
+                        <th>Company</th>
+                        <th>Location</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for job in results.results %}
+                    <tr class="{{ 'table-success' if job.state == 'relevant' else 'table-warning' if job.state == 'saved' else 'table-primary' if job.state == 'applied' else 'table-light' if job.state == 'viewed' else '' }}">
+                        <td><small class="text-muted">{{ job.job_id }}</small></td>
+                        <td><a href="{{ url_for('job_detail', job_id=job.job_id) }}">{{ job.title }}</a></td>
+                        <td>{{ job.company }}</td>
+                        <td>{{ job.location }}</td>
+                        <td>
+                            <span class="badge bg-{{ 'success' if job.state == 'relevant' else 'warning' if job.state == 'saved' else 'primary' if job.state == 'applied' else 'info' if job.state == 'viewed' else 'secondary' }}">
+                                {{ job.state }}
+                            </span>
+                        </td>
+                        <td>{{ job.state_timestamp.split(' ')[0] }}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('job_detail', job_id=job.job_id) }}" class="btn btn-outline-primary">View</a>
+                                <button type="button" class="btn btn-outline-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span class="visually-hidden">Toggle Dropdown</span>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item job-action" href="#" data-action="saved" data-job-id="{{ job.job_id }}">Mark as Saved</a></li>
+                                    <li><a class="dropdown-item job-action" href="#" data-action="applied" data-job-id="{{ job.job_id }}">Mark as Applied</a></li>
+                                    <li><a class="dropdown-item job-action" href="#" data-action="rejected" data-job-id="{{ job.job_id }}">Reject</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item reanalyze-job" href="#" data-job-id="{{ job.job_id }}">Reanalyze</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item text-danger delete-job" href="#" data-job-id="{{ job.job_id }}" data-job-title="{{ job.title }}">Delete Permanently</a></li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <p class="text-muted mb-0">No jobs match your criteria</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+    <div class="card-footer">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <p class="mb-md-0">Showing {{ results.results|length }} of {{ results.pagination.total }} jobs</p>
+            </div>
+            <div class="col-md-6">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-end mb-0">
+                        <li class="page-item {{ 'disabled' if results.pagination.prev_offset is none else '' }}">
+                            <a class="page-link" href="{{ url_for('jobs', query=query, state=states, offset=results.pagination.prev_offset) if results.pagination.prev_offset is not none else '#' }}">Previous</a>
+                        </li>
+
+                        <li class="page-item {{ 'disabled' if results.pagination.next_offset is none else '' }}">
+                            <a class="page-link" href="{{ url_for('jobs', query=query, state=states, offset=results.pagination.next_offset) if results.pagination.next_offset is not none else '#' }}">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+<!-- Add Job Modal -->
+<div class="modal fade" id="addJobModal" tabindex="-1" aria-labelledby="addJobModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addJobModalLabel">Add Job by URL</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addJobForm">
+                    <div class="mb-3">
+                        <label for="jobUrl" class="form-label">Job URL</label>
+                        <input type="url" class="form-control" id="jobUrl" placeholder="https://www.linkedin.com/jobs/view/12345" required>
+                        <div class="form-text">Enter the URL of the job listing you want to add.</div>
+                    </div>
+
+                    <hr>
+                    <p>Please provide the job details:</p>
+
+                    <div class="mb-3">
+                        <label for="jobTitle" class="form-label">Job Title</label>
+                        <input type="text" class="form-control" id="jobTitle" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="jobCompany" class="form-label">Company</label>
+                        <input type="text" class="form-control" id="jobCompany" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="jobLocation" class="form-label">Location</label>
+                        <input type="text" class="form-control" id="jobLocation">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="jobDescription" class="form-label">Job Description</label>
+                        <textarea class="form-control" id="jobDescription" rows="5" required></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="jobSourceTerm" class="form-label">Search Term</label>
+                        <input type="text" class="form-control" id="jobSourceTerm" placeholder="e.g., Data Scientist">
+                        <div class="form-text">The search term used to find this job or job category.</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="addJobBtn">Add Job</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block head_extra %}
+<!-- Add this to the base.html file in the head_extra block -->
+<script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle delete job actions
+        document.querySelectorAll('.delete-job').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+
+                const jobId = this.getAttribute('data-job-id');
+                const jobTitle = this.getAttribute('data-job-title');
+
+                if (!jobId) return;
+
+                // Confirm deletion
+                if (!confirm(`Are you sure you want to permanently delete "${jobTitle}"? This action cannot be undone.`)) {
+                    return;
+                }
+
+                // Call API to delete job
+                fetch('{{ url_for('delete_job') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({
+                        job_id: jobId
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        // Show success message and refresh the page
+                        alert(data.message || 'Job successfully deleted');
+                        location.reload();
+                    } else {
+                        // Show error message
+                        alert('Error: ' + (data.message || 'Failed to delete job'));
+                    }
+                })
+                .catch(error => {
+                    alert('Error: ' + error.message);
+                });
+            });
+        });
+
+        // Handle job action buttons
+        document.querySelectorAll('.job-action').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+
+                const jobId = this.getAttribute('data-job-id');
+                const action = this.getAttribute('data-action');
+
+                if (!jobId || !action) return;
+
+                // Call API to update job state
+                fetch('{{ url_for('update_job_state') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({
+                        job_id: jobId,
+                        state: action
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        // Reload page to show updated state
+                        location.reload();
+                    } else {
+                        alert('Error: ' + (data.message || 'Failed to update job state'));
+                    }
+                })
+                .catch(error => {
+                    alert('Error: ' + error.message);
+                });
+            });
+        });
+
+        // Handle reanalyze buttons
+        document.querySelectorAll('.reanalyze-job').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+
+                const jobId = this.getAttribute('data-job-id');
+                if (!jobId) return;
+
+                // Show loading state
+                this.innerText = 'Analyzing...';
+                this.classList.add('disabled');
+
+                // Call API to reanalyze job
+                fetch('{{ url_for('reanalyze_job') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({
+                        job_id: jobId
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        // Reload page to show updated state
+                        location.reload();
+                    } else {
+                        alert('Error: ' + (data.message || 'Failed to reanalyze job'));
+                        this.innerText = 'Reanalyze';
+                        this.classList.remove('disabled');
+                    }
+                })
+                .catch(error => {
+                    alert('Error: ' + error.message);
+                    this.innerText = 'Reanalyze';
+                    this.classList.remove('disabled');
+                });
+            });
+        });
+
+        // Ensure at least one checkbox is checked
+        document.getElementById('filterForm').addEventListener('submit', function(e) {
+            const checkboxes = document.querySelectorAll('input[name="state"]:checked');
+            if (checkboxes.length === 0) {
+                e.preventDefault();
+                alert('Please select at least one job status filter');
+            }
+        });
+
+        // Add job by URL
+        document.getElementById('addJobBtn').addEventListener('click', function() {
+            const jobUrl = document.getElementById('jobUrl').value.trim();
+            const jobTitle = document.getElementById('jobTitle').value.trim();
+            const jobCompany = document.getElementById('jobCompany').value.trim();
+            const jobLocation = document.getElementById('jobLocation').value.trim();
+            const jobDescription = document.getElementById('jobDescription').value.trim();
+            const jobSourceTerm = document.getElementById('jobSourceTerm').value.trim();
+
+            if (!jobUrl || !jobTitle || !jobCompany || !jobDescription) {
+                alert('Please fill out all required fields');
+                return;
+            }
+
+            // Disable button to prevent multiple submissions
+            this.disabled = true;
+            this.innerText = 'Adding...';
+
+            // Call the API
+            fetch('{{ url_for('add_job_by_url') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    job_url: jobUrl,
+                    job_data: {
+                        title: jobTitle,
+                        company: jobCompany,
+                        location: jobLocation,
+                        description: jobDescription,
+                        source_term: jobSourceTerm
+                    }
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert(data.message);
+                    // Close modal and reload page
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('addJobModal'));
+                    if (modal) modal.hide();
+                    location.reload();
+                } else {
+                    alert('Error: ' + (data.message || 'Failed to add job'));
+                }
+            })
+            .catch(error => {
+                alert('Error: ' + error.message);
+            })
+            .finally(() => {
+                // Re-enable button
+                this.disabled = false;
+                this.innerText = 'Add Job';
+            });
+        });
+    });
+</script>
+{% endblock %}

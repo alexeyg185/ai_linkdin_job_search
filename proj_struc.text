@@ -1,0 +1,44 @@
+job_search_automation/
+├── app.py                 # Main entry point
+├── config.py              # Configuration management
+├── services/              # Core service modules
+│   ├── __init__.py
+│   ├── user_service.py    # User authentication and management
+│   ├── scraper_service.py # LinkedIn job scraping
+│   ├── analysis_service.py # LLM-based job analysis
+│   ├── database_service.py # Database operations
+│   ├── preference_service.py # User preferences management
+│   ├── scheduler_service.py # Job scheduling
+│   └── orchestrator.py    # Workflow coordination
+├── database/              # Database management
+│   ├── __init__.py
+│   ├── db_manager.py      # Connection and transaction handling
+│   └── models.py          # SQLite table definitions
+├── static/                # Static assets
+│   ├── css/
+│   │   ├── bootstrap.min.css
+│   │   └── custom.css
+│   ├── js/
+│   │   ├── jquery.min.js
+│   │   ├── bootstrap.bundle.min.js
+│   │   ├── chart.js
+│   │   └── custom.js
+│   └── img/
+├── templates/             # Flask HTML templates
+│   ├── base.html          # Base template with common elements
+│   ├── auth/
+│   │   ├── login.html
+│   │   └── register.html
+│   ├── dashboard/
+│   │   └── index.html
+│   ├── jobs/
+│   │   ├── list.html
+│   │   └── detail.html
+│   └── preferences/
+│       └── settings.html
+├── utils/                 # Utility functions
+│   ├── __init__.py
+│   ├── security.py        # Security helpers
+│   └── formatters.py      # Data formatting helpers
+├── requirements.txt       # Dependencies
+└── README.md              # Documentation

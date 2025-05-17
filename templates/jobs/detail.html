@@ -1,0 +1,448 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ job.job.title }} - AI Job Search Automation{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('jobs') }}">Jobs</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Job Detail</li>
+            </ol>
+        </nav>
+        <h1 class="h3">{{ job.job.title }}</h1>
+        <h5 class="text-muted">{{ job.job.company }}</h5>
+    </div>
+    <div class="col-md-4 text-end">
+        <div class="btn-group" role="group">
+            <a href="{{ job.job.url }}" target="_blank" class="btn btn-primary">
+                <i class="fa fa-external-link"></i> View on LinkedIn
+            </a>
+            <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                <span class="visually-hidden">Toggle Dropdown</span>
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item job-action" href="#" data-action="saved">Mark as Saved</a></li>
+                <li><a class="dropdown-item job-action" href="#" data-action="applied">Mark as Applied</a></li>
+                <li><a class="dropdown-item job-action" href="#" data-action="rejected">Reject</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="#" id="reanalyzeJob">Reanalyze</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item text-danger" href="#" id="deleteJob" data-confirm="Are you sure you want to permanently delete this job? This action cannot be undone.">Delete Permanently</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Left Column - Job Details -->
+    <div class="col-lg-8">
+        <!-- Job Info Card -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Job Information</h5>
+                <span class="badge bg-{{ 'success' if job.current_state.state == 'relevant' else 'warning' if job.current_state.state == 'saved' else 'primary' if job.current_state.state == 'applied' else 'danger' if job.current_state.state == 'rejected' else 'info' if job.current_state.state == 'viewed' else 'secondary' }}">
+                    {{ job.current_state.state }}
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <strong>Job ID:</strong>
+                    </div>
+                    <div class="col-md-8">
+                        <code>{{ job.job.job_id }}</code>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <strong>Company:</strong>
+                    </div>
+                    <div class="col-md-8">
+                        {{ job.job.company }}
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <strong>Location:</strong>
+                    </div>
+                    <div class="col-md-8">
+                        {{ job.job.location }}
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <strong>Scraped Date:</strong>
+                    </div>
+                    <div class="col-md-8">
+                        {{ job.job.scraped_at }}
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <strong>Relevance Score:</strong>
+                    </div>
+                    <div class="col-md-8">
+                        {% if job.analysis %}
+                            <div class="progress" style="height: 25px;">
+                                <div class="progress-bar {{ 'bg-success' if job.analysis.relevance_score >= analysis_constants.RELEVANCE_DISPLAY.HIGH else 'bg-warning' if job.analysis.relevance_score >= analysis_constants.RELEVANCE_DISPLAY.MEDIUM else 'bg-danger' }}"
+                                     role="progressbar"
+                                     style="width: {{ job.analysis.relevance_score * 100 }}%;"
+                                     aria-valuenow="{{ job.analysis.relevance_score * 100 }}"
+                                     aria-valuemin="0"
+                                     aria-valuemax="100">
+                                    {{ "%.0f"|format(job.analysis.relevance_score * 100) }}%
+                                </div>
+                            </div>
+                        {% else %}
+                            <span class="text-muted">Not analyzed yet</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <strong>Search Term:</strong>
+                    </div>
+                    <div class="col-md-8">
+                        {{ job.job.source_term or 'Unknown' }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Job Description Card -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Job Description</h5>
+            </div>
+            <div class="card-body">
+                <div class="job-description">
+                    {{ job.job.description|safe }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Notes Card -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Notes</h5>
+            </div>
+            <div class="card-body">
+                <form id="notesForm">
+                    <div class="mb-3">
+                        <textarea class="form-control" id="jobNotes" rows="3" placeholder="Add notes about this job...">{{ job.current_state.notes or '' }}</textarea>
+                    </div>
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-primary" id="saveNotes">Save Notes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column - Analysis and State History -->
+    <div class="col-lg-4">
+        <!-- Analysis Card -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Analysis Details</h5>
+            </div>
+            <div class="card-body">
+                {% if job.analysis %}
+                    <div class="mb-3">
+                        <strong>Analyzed:</strong> {{ job.analysis.analyzed_at }}
+                    </div>
+
+                    {% if job.analysis.analysis_details.title_analysis %}
+                    <div class="mb-3">
+                        <h6>Title Analysis</h6>
+                        <ul class="list-group">
+                            <li class="list-group-item">
+                                <strong>Title Keywords:</strong>
+                                {% for keyword in job.analysis.analysis_details.title_analysis.title_keywords %}
+                                    <span class="badge bg-info me-1">{{ keyword }}</span>
+                                {% else %}
+                                    <span class="text-muted">None found</span>
+                                {% endfor %}
+                            </li>
+                            <li class="list-group-item">
+                                <strong>Matches Pattern:</strong>
+                                {% if job.analysis.analysis_details.title_analysis.matches_pattern %}
+                                    <span class="badge bg-success">Yes</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">No</span>
+                                {% endif %}
+                            </li>
+                            {% if job.analysis.analysis_details.title_analysis.pattern_matched %}
+                            <li class="list-group-item">
+                                <strong>Pattern Matched:</strong> {{ job.analysis.analysis_details.title_analysis.pattern_matched }}
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    {% if job.analysis.analysis_details.full_analysis %}
+                    <div class="mb-3">
+                        <h6>Skills Analysis</h6>
+                        <div class="row mb-2">
+                            <div class="col-md-6">
+                                <strong>Required Skills Found:</strong>
+                            </div>
+                            <div class="col-md-6">
+                                {% for skill in job.analysis.analysis_details.full_analysis.required_skills_found %}
+                                    <span class="badge bg-success me-1">{{ skill }}</span>
+                                {% else %}
+                                    <span class="text-muted">None found</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-md-6">
+                                <strong>Preferred Skills Found:</strong>
+                            </div>
+                            <div class="col-md-6">
+                                {% for skill in job.analysis.analysis_details.full_analysis.preferred_skills_found %}
+                                    <span class="badge bg-info me-1">{{ skill }}</span>
+                                {% else %}
+                                    <span class="text-muted">None found</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-md-6">
+                                <strong>Missing Required Skills:</strong>
+                            </div>
+                            <div class="col-md-6">
+                                {% for skill in job.analysis.analysis_details.full_analysis.missing_required_skills %}
+                                    <span class="badge bg-danger me-1">{{ skill }}</span>
+                                {% else %}
+                                    <span class="text-success">None missing</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <h6 class="mt-3">Reasoning</h6>
+                        <p>{{ job.analysis.analysis_details.full_analysis.reasoning }}</p>
+
+                        {% if job.analysis.analysis_details.full_analysis.job_responsibilities %}
+                        <h6 class="mt-3">Key Responsibilities</h6>
+                        <ul>
+                            {% for resp in job.analysis.analysis_details.full_analysis.job_responsibilities %}
+                                <li>{{ resp }}</li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                {% else %}
+                    <div class="alert alert-info">
+                        <p class="mb-0">This job has not been analyzed yet.</p>
+                    </div>
+                    <div class="d-grid">
+                        <button id="analyzeFirstTimeBtn" class="btn btn-primary">Analyze Now</button>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- State History Card -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">State History</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for state in job.state_history %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="badge bg-{{ 'success' if state.state == 'relevant' else 'warning' if state.state == 'saved' else 'primary' if state.state == 'applied' else 'danger' if state.state == 'rejected' else 'info' if state.state == 'viewed' else 'secondary' }}">
+                                {{ state.state }}
+                            </span>
+                            <small class="text-muted">{{ state.state_timestamp }}</small>
+                        </div>
+                        {% if state.notes %}
+                        <p class="mb-0 mt-2 small">{{ state.notes }}</p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle job action buttons
+        document.querySelectorAll('.job-action').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+
+                const action = this.getAttribute('data-action');
+                let notes = '';
+
+                // If it's a rejection or application, prompt for notes
+                if (action === 'rejected' || action === 'applied') {
+                    notes = prompt(
+                        action === 'rejected'
+                            ? 'Why are you rejecting this job?'
+                            : 'Add notes about your application:',
+                        document.getElementById('jobNotes').value || ''
+                    );
+
+                    // User canceled the prompt
+                    if (notes === null) return;
+                }
+
+                // Call API to update job state
+                fetch('{{ url_for('update_job_state') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({
+                        job_id: '{{ job.job.job_id }}',
+                        state: action,
+                        notes: notes
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        // Reload page to show updated state
+                        location.reload();
+                    } else {
+                        alert('Error: ' + (data.message || 'Failed to update job state'));
+                    }
+                })
+                .catch(error => {
+                    alert('Error: ' + error.message);
+                });
+            });
+        });
+
+        // Save notes
+        document.getElementById('notesForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const notes = document.getElementById('jobNotes').value;
+
+            // Get current state
+            const currentState = '{{ job.current_state.state }}';
+
+            // Call API to update job state with new notes
+            fetch('{{ url_for('update_job_state') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    job_id: '{{ job.job.job_id }}',
+                    state: currentState,
+                    notes: notes
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('Notes saved successfully');
+                } else {
+                    alert('Error: ' + (data.message || 'Failed to save notes'));
+                }
+            })
+            .catch(error => {
+                alert('Error: ' + error.message);
+            });
+        });
+
+        // Delete job functionality
+        document.getElementById('deleteJob').addEventListener('click', function(e) {
+            e.preventDefault();
+
+            // Confirm deletion
+            if (!confirm('Are you sure you want to permanently delete this job? This action cannot be undone.')) {
+                return;
+            }
+
+            // Call API to delete job
+            fetch('{{ url_for('delete_job') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    job_id: '{{ job.job.job_id }}'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Show success message and redirect to jobs page
+                    alert(data.message || 'Job successfully deleted');
+                    window.location.href = '{{ url_for('jobs') }}';
+                } else {
+                    // Show error message
+                    alert('Error: ' + (data.message || 'Failed to delete job'));
+                }
+            })
+            .catch(error => {
+                alert('Error: ' + error.message);
+            });
+        });
+
+        // Reanalyze job
+        const reanalyzeHandler = function(e) {
+            e.preventDefault();
+
+            // Show loading state
+            this.innerText = 'Analyzing...';
+            this.classList.add('disabled');
+
+            // Call API to reanalyze job
+            fetch('{{ url_for('reanalyze_job') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    job_id: '{{ job.job.job_id }}'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Reload page to show updated analysis
+                    location.reload();
+                } else {
+                    alert('Error: ' + (data.message || 'Failed to reanalyze job'));
+                    this.innerText = 'Reanalyze';
+                    this.classList.remove('disabled');
+                }
+            })
+            .catch(error => {
+                alert('Error: ' + error.message);
+                this.innerText = 'Reanalyze';
+                this.classList.remove('disabled');
+            });
+        };
+
+        // Add handler to reanalyze buttons
+        document.getElementById('reanalyzeJob').addEventListener('click', reanalyzeHandler);
+
+        // If analyze first time button exists, add handler
+        const analyzeFirstTimeBtn = document.getElementById('analyzeFirstTimeBtn');
+        if (analyzeFirstTimeBtn) {
+            analyzeFirstTimeBtn.addEventListener('click', reanalyzeHandler);
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,410 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - AI Job Search Automation{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1 class="h3">Job Search Dashboard</h1>
+    </div>
+    <div class="col-md-4 text-end">
+        <button id="run-job-now" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#runJobModal">
+            <i class="fa fa-play"></i> Run Job Now
+        </button>
+    </div>
+</div>
+
+<!-- Job Stats Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h5 class="card-title">Total Jobs</h5>
+                <h2 class="display-4">{{ data.job_stats.total_jobs }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title">Relevant Jobs</h5>
+                <h2 class="display-4">{{ data.job_stats.states.relevant }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h5 class="card-title">Applied</h5>
+                <h2 class="display-4">{{ data.job_stats.states.applied }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark">
+            <div class="card-body">
+                <h5 class="card-title">Saved</h5>
+                <h2 class="display-4">{{ data.job_stats.states.saved }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Left Column - Charts and Stats -->
+    <div class="col-lg-8">
+        <!-- Job State Distribution Chart -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Job Status Distribution</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="jobStateChart" height="250"></canvas>
+            </div>
+        </div>
+
+        <!-- Company and Location Charts -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Top Companies</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="companyChart" height="250"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Job Locations</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="locationChart" height="250"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column - Job Lists and Activity -->
+    <div class="col-lg-4">
+        <!-- Recent Activity -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Recent Activity</h5>
+                <a href="{{ url_for('jobs') }}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for activity in data.job_stats.recent_activity %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">{{ activity.state_timestamp }}</small>
+                            <span class="badge bg-{{ 'success' if activity.state == 'relevant' else 'primary' if activity.state == 'applied' else 'warning' if activity.state == 'saved' else 'secondary' }}">
+                                {{ activity.state }}
+                            </span>
+                        </div>
+                        <h6 class="mb-1">{{ activity.title }}</h6>
+                        <p class="mb-1 text-muted">{{ activity.company }}</p>
+                    </div>
+                    {% else %}
+                    <div class="list-group-item text-center py-4">
+                        <p class="text-muted mb-0">No recent activity</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Relevant Jobs -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Relevant Jobs</h5>
+                <a href="{{ url_for('jobs', state='relevant') }}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for job in data.recent_jobs.relevant %}
+                    <a href="{{ url_for('job_detail', job_id=job.job_id) }}" class="list-group-item list-group-item-action">
+                        <h6 class="mb-1">{{ job.title }}</h6>
+                        <p class="mb-1 text-muted">{{ job.company }} - {{ job.location }}</p>
+                    </a>
+                    {% else %}
+                    <div class="list-group-item text-center py-4">
+                        <p class="text-muted mb-0">No relevant jobs yet</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Schedule -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Schedule</h5>
+            </div>
+            <div class="card-body">
+                {% if data.schedule %}
+                <p><strong>Schedule Type:</strong> {{ data.schedule.schedule_type }}</p>
+                <p><strong>Execution Time:</strong> {{ data.schedule.execution_time }}</p>
+                <p><strong>Last Run:</strong> {{ data.schedule.last_run or 'Never' }}</p>
+                <p><strong>Status:</strong>
+                    {% if data.schedule.enabled %}
+                    <span class="badge bg-success">Enabled</span>
+                    {% else %}
+                    <span class="badge bg-danger">Disabled</span>
+                    {% endif %}
+                </p>
+                {% else %}
+                <p class="text-center text-muted">No schedule configured</p>
+                {% endif %}
+                <div class="d-grid">
+                    <a href="{{ url_for('preferences') }}" class="btn btn-outline-primary btn-sm">Edit Schedule</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Run Job Modal -->
+<div class="modal fade" id="runJobModal" tabindex="-1" aria-labelledby="runJobModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="runJobModalLabel">Run Job Now</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>This will immediately run a job scraping and analysis process.</p>
+                <div id="jobStatusContainer" style="display: none;">
+                    <div class="alert alert-info">
+                        <div class="d-flex align-items-center">
+                            <div class="spinner-border spinner-border-sm me-2" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <div>
+                                <strong>Job Status: <span id="jobStatusText">Starting...</span></strong>
+                                <div id="jobStatusDetails" class="mt-2 small"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="closeJobModal">Close</button>
+                <button type="button" class="btn btn-primary" id="startJobButton">Start Job</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Job State Chart
+        const jobStateData = {
+            labels: ['Relevant', 'Irrelevant', 'Viewed', 'Saved', 'Applied', 'Rejected'],
+            datasets: [{
+                data: [
+                    {{ data.job_stats.states.relevant }},
+                    {{ data.job_stats.states.irrelevant }},
+                    {{ data.job_stats.states.viewed }},
+                    {{ data.job_stats.states.saved }},
+                    {{ data.job_stats.states.applied }},
+                    {{ data.job_stats.states.rejected }}
+                ],
+                backgroundColor: [
+                    'rgba(40, 167, 69, 0.7)',  // success
+                    'rgba(108, 117, 125, 0.7)', // secondary
+                    'rgba(23, 162, 184, 0.7)',  // info
+                    'rgba(255, 193, 7, 0.7)',   // warning
+                    'rgba(0, 123, 255, 0.7)',   // primary
+                    'rgba(220, 53, 69, 0.7)'    // danger
+                ],
+                borderWidth: 1
+            }]
+        };
+
+        new Chart(document.getElementById('jobStateChart'), {
+            type: 'doughnut',
+            data: jobStateData,
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                    },
+                }
+            }
+        });
+
+        // Companies Chart
+        const companyLabels = [];
+        const companyData = [];
+
+        {% for company, count in data.job_stats.by_company.items() %}
+            companyLabels.push("{{ company }}");
+            companyData.push({{ count }});
+        {% endfor %}
+
+        new Chart(document.getElementById('companyChart'), {
+            type: 'bar',
+            data: {
+                labels: companyLabels,
+                datasets: [{
+                    label: 'Jobs by Company',
+                    data: companyData,
+                    backgroundColor: 'rgba(0, 123, 255, 0.7)',
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+
+        // Locations Chart
+        const locationLabels = [];
+        const locationData = [];
+
+        {% for location, count in data.job_stats.by_location.items() %}
+            locationLabels.push("{{ location }}");
+            locationData.push({{ count }});
+        {% endfor %}
+
+        new Chart(document.getElementById('locationChart'), {
+            type: 'bar',
+            data: {
+                labels: locationLabels,
+                datasets: [{
+                    label: 'Jobs by Location',
+                    data: locationData,
+                    backgroundColor: 'rgba(23, 162, 184, 0.7)',
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+
+        // Run Job functionality
+        let jobStatusInterval;
+        let currentJobId;
+
+        document.getElementById('startJobButton').addEventListener('click', function() {
+            // Show status container and hide start button
+            document.getElementById('jobStatusContainer').style.display = 'block';
+            document.getElementById('startJobButton').style.display = 'none';
+
+            // Call API to start job
+            fetch('{{ url_for('run_job') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'started') {
+                    currentJobId = data.job_id;
+
+                    // Start polling for status updates
+                    jobStatusInterval = setInterval(checkJobStatus, 2000);
+                } else {
+                    document.getElementById('jobStatusText').innerText = 'Error: ' + (data.message || 'Failed to start job');
+                    document.getElementById('startJobButton').style.display = 'inline-block';
+                }
+            })
+            .catch(error => {
+                document.getElementById('jobStatusText').innerText = 'Error: ' + error.message;
+                document.getElementById('startJobButton').style.display = 'inline-block';
+            });
+        });
+
+        function checkJobStatus() {
+            if (!currentJobId) return;
+
+            fetch(`{{ url_for('job_status', job_id='JOB_ID') }}`.replace('JOB_ID', currentJobId))
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'not_found') {
+                    document.getElementById('jobStatusText').innerText = 'Job not found or completed';
+                    clearInterval(jobStatusInterval);
+                    return;
+                }
+
+                // Update status text
+                document.getElementById('jobStatusText').innerText = data.status;
+
+                // Generate status details
+                let detailsHtml = '';
+                if (data.steps && data.steps.length > 0) {
+                    // Find the current step
+                    const currentStep = data.steps.find(s => s.name === data.current_step);
+                    if (currentStep && currentStep.events && currentStep.events.length > 0) {
+                        const lastEvent = currentStep.events[currentStep.events.length - 1];
+                        if (data.current_step === 'scraping') {
+                            if (lastEvent.event === 'job_found') {
+                                detailsHtml = `Found job: ${lastEvent.data.title} at ${lastEvent.data.company}`;
+                            } else if (lastEvent.event === 'end') {
+                                detailsHtml = `Scraping complete. Found ${lastEvent.data.jobs_found} jobs.`;
+                            }
+                        } else if (data.current_step === 'analyzing') {
+                            if (lastEvent.event === 'analyzed') {
+                                const relevance = (lastEvent.data.relevance_score * 100).toFixed(0);
+                                detailsHtml = `Analyzed job: ${relevance}% relevant`;
+                            } else if (lastEvent.event === 'complete') {
+                                detailsHtml = `Analysis complete. Found ${lastEvent.data.relevant} relevant jobs out of ${lastEvent.data.analyzed} analyzed.`;
+                            }
+                        }
+                    }
+                }
+                document.getElementById('jobStatusDetails').innerHTML = detailsHtml;
+
+                // If job is completed or failed, stop polling
+                if (data.status === 'completed' || data.status === 'failed') {
+                    clearInterval(jobStatusInterval);
+
+                    // Show completion message
+                    if (data.status === 'completed') {
+                        document.getElementById('jobStatusDetails').innerHTML += '<div class="alert alert-success mt-2">Job completed successfully! Refresh the page to see updated data.</div>';
+                    } else {
+                        document.getElementById('jobStatusDetails').innerHTML += `<div class="alert alert-danger mt-2">Job failed: ${data.error || 'Unknown error'}</div>`;
+                    }
+
+                    // Show reload button
+                    document.getElementById('jobStatusDetails').innerHTML += '<div class="d-grid mt-2"><button class="btn btn-primary btn-sm" onclick="location.reload()">Refresh Dashboard</button></div>';
+                }
+            })
+            .catch(error => {
+                document.getElementById('jobStatusDetails').innerText = 'Error checking status: ' + error.message;
+            });
+        }
+
+        // When the modal is hidden, clear the interval
+        $('#runJobModal').on('hidden.bs.modal', function () {
+            if (jobStatusInterval) {
+                clearInterval(jobStatusInterval);
+            }
+            // Reset UI for next time
+            document.getElementById('jobStatusContainer').style.display = 'none';
+            document.getElementById('startJobButton').style.display = 'inline-block';
+        });
+    });
+</script>
+{% endblock %}

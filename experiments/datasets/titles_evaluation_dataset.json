@@ -1,0 +1,23 @@
+[
+  {
+    "title": "Machine Learning Engineer",
+    "company": "Google",
+    "expected_relevance": 0.9,
+    "job_titles": ["Data Scientist", "Machine Learning Engineer", "AI Engineer"],
+    "relevant_patterns": ["AI", "Machine Learning", "ML", "Data Scientist", "NLP", "Computer Vision"]
+  },
+  {
+    "title": "Data Scientist",
+    "company": "Microsoft",
+    "expected_relevance": 0.85,
+    "job_titles": ["Data Scientist", "Machine Learning Engineer", "AI Engineer"],
+    "relevant_patterns": ["AI", "Machine Learning", "ML", "Data Scientist", "NLP", "Computer Vision"]
+  },
+  {
+    "title": "Marketing Manager",
+    "company": "IBM",
+    "expected_relevance": 0.1,
+    "job_titles": ["Marketing Manager", "Brand Manager", "Communications Manager"],
+    "relevant_patterns": ["Marketing", "Brand", "Communications", "Advertising", "PR"]
+  }
+]

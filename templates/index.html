@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block title %}AI Job Search Automation{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">AI Job Search Automation</h4>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <h2>Welcome to AI Job Search</h2>
+                    <p class="lead">Find the perfect job with AI-powered analysis</p>
+                </div>
+
+                <p>This application helps you:</p>
+                <ul>
+                    <li>Automatically search for jobs on LinkedIn</li>
+                    <li>Analyze job descriptions using AI to determine relevance</li>
+                    <li>Track your applications and saved jobs</li>
+                    <li>Get insights into the job market for your skills</li>
+                </ul>
+
+                <div class="d-grid gap-2 mt-4">
+                    <a href="{{ url_for('login') }}" class="btn btn-primary">Log In</a>
+                    <a href="{{ url_for('setup') }}" class="btn btn-outline-primary">Setup (First Time)</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
